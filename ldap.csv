@@ -1,0 +1,26 @@
+uid,cn,sn,givenName,uo_mesa,grupo_cn,is_teacher
+# Mesa Delante (4) / Grupo Alumnos D
+daniela,Daniela,Usuario,Daniela,MesaDelante,AlumnosD,FALSE
+david,David,Usuario,David,MesaDelante,AlumnosD,FALSE
+anas,Anas,Usuario,Anas,MesaDelante,AlumnosD,FALSE
+aritz,Aritz,Usuario,Aritz,MesaDelante,AlumnosD,FALSE
+# Mesa Medio Delante (3) / Grupo Alumnos MD
+adrianv,Adrian V Iñigo,Usuario,Adrian V,MesaMedioDelante,AlumnosMD,FALSE
+imanolb,Imanol Bertran,Usuario,Imanol,MesaMedioDelante,AlumnosMD,FALSE
+naufel,Naufel,Usuario,Naufel,MesaMedioDelante,AlumnosMD,FALSE
+# Mesa Profesor (5) / Grupo Profesores
+guillermo,Guillermo,Profesor,Guillermo,MesaProfesor,Profesores,TRUE
+lidia,Lidia,Profesor,Lidia,MesaProfesor,Profesores,TRUE
+imanolt,Imanol Todopoderoso,Profesor,Imanol,MesaProfesor,Profesores,TRUE
+airhoa,Ainhoa,Profesor,Ainhoa,MesaProfesor,Profesores,TRUE
+inigo,Iñigo,Profesor,Iñigo,MesaProfesor,Profesores,TRUE
+# Mesa Medio Fondo (5) / Grupo Alumnos MF
+ibail,Ibai L,Usuario,Ibai L,MesaMedioFondo,AlumnosMF,FALSE
+yasser,Yasser,Usuario,Yasser,MesaMedioFondo,AlumnosMF,FALSE
+ekaitzh,Ekaitz H,Usuario,Ekaitz H,MesaMedioFondo,AlumnosMF,FALSE
+ibaih,Ibai H,Usuario,Ibai H,MesaMedioFondo,AlumnosMF,FALSE
+enar,Enar,Usuario,Enar,MesaMedioFondo,AlumnosMF,FALSE
+# Mesa Fondo (3) / Grupo Alumnos F
+denisa,Denis,Usuario,Denis,MesaFondo,AlumnosF,FALSE
+adrian_o,Adrian O,Usuario,Adrian O,MesaFondo,AlumnosF,FALSE
+alex,Alex,Usuario,Alex,MesaFondo,AlumnosF,FALSE
