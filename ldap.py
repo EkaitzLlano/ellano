@@ -11,9 +11,9 @@ import sys
 # ⚠️ CONFIGURACIÓN AJUSTADA A 192.168.1.20 y ellano.local ⚠️
 # =================================================================
 LDAP_SERVER = 'ldap://192.168.1.20:389'           # IP del Ubuntu Server
-BIND_DN = 'cn=admin,dc=ellano,dc=local'           # DN de tu usuario administrador
+BIND_DN = 'cn=admin,dc=ellano,dc=ldap'           # DN de tu usuario administrador
 BIND_PASSWORD = 'Qwerty123'                 # Contraseña del administrador (¡MODIFICA ESTO!)
-BASE_DN = 'dc=ellano,dc=local'                      # Nuevo DN base
+BASE_DN = 'dc=ellano,dc=ldap'                      # Nuevo DN base
 # =================================================================
 CSV_FILE = 'ldap.csv'
 TEMP_PASSWORD = 'Qwerty123' # Contraseña temporal hasheada para todos los usuarios
