@@ -1,4 +1,4 @@
-import csv
+import csv  # <-- 1. IMPORTACIÓN AÑADIDA (¡CRÍTICO!)
 from ldap3 import Server, Connection, ALL, extend
 import hashlib
 import base64
@@ -57,13 +57,16 @@ def main():
     # 2. Leer datos del CSV y recolectar la estructura
     users_data = []
     try:
+        # El 'import csv' ya está arriba del script
         with open(CSV_FILE, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                users_data.append(row)
-                uos_a_crear.add(row['uo_mesa'])
-                if row['grupo_cn'] not in grupos_a_crear:
-                    grupos_a_crear[row['grupo_cn']] = {'uo_mesa': row['uo_mesa'], 'members': []}
+                # Ignora líneas de comentario o vacías en el CSV
+                if row and (not row['uid'].startswith('#') and row['uid'].strip()):
+                    users_data.append(row)
+                    uos_a_crear.add(row['uo_mesa'])
+                    if row['grupo_cn'] not in grupos_a_crear:
+                        grupos_a_crear[row['grupo_cn']] = {'uo_mesa': row['uo_mesa'], 'members': []}
 
     except Exception as e:
         print(f"Error al leer o procesar el archivo CSV: {e}")
@@ -74,12 +77,22 @@ def main():
     # 3. CREACIÓN DE UNIDADES ORGANIZATIVAS (OU)
     print("\n--- PASO 1: CREANDO UNIDADES ORGANIZATIVAS (OU) ---")
     
-    # Crear la UO principal (Informatica)
-    informatica_dn = f'ou=Informatica,{BASE_DN}'
+    # --- 2. JERARQUÍA MODIFICADA ---
+    
+    # 1. Crear la UO raíz: CIP Tafalla
+    cip_tafalla_dn = f'ou=CIP Tafalla,{BASE_DN}'
+    create_entry(conn, cip_tafalla_dn, ['organizationalUnit', 'top'], {'ou': 'CIP Tafalla'})
+
+    # 2. Crear la UO principal (Informatica) DENTRO de CIP Tafalla
+    informatica_dn = f'ou=Informatica,{cip_tafalla_dn}'
     create_entry(conn, informatica_dn, ['organizationalUnit', 'top'], {'ou': 'Informatica'})
 
-    # Crear las UOs de las Mesas (MesaDelante, MesaProfesor, etc.)
-    for uo_mesa in sorted(uos_a_crear):
+    # 3. Crear las UOs de las Mesas (MesaDelante, etc.) DENTRO de Informatica
+    
+    # --- 3. FILTRO AÑADIDO (Evita error de NoneType) ---
+    valid_uos = [uo for uo in uos_a_crear if uo] # Filtra None o strings vacíos
+    
+    for uo_mesa in sorted(valid_uos):
         uo_dn = f'ou={uo_mesa},{informatica_dn}'
         create_entry(conn, uo_dn, ['organizationalUnit', 'top'], {'ou': uo_mesa})
 
@@ -87,45 +100,9 @@ def main():
     print("\n--- PASO 2: CREANDO USUARIOS ---")
     
     for user in users_data:
-        # DN del usuario: cn=NOMBRE,ou=MESA,ou=INFORMATICA,dc=ELLANO,dc=LOCAL
+        # DN del usuario: cn=NOMBRE,ou=MESA,ou=INFORMATICA,ou=CIP TAFALLA,dc=...
         user_dn = f"cn={user['cn']},ou={user['uo_mesa']},{informatica_dn}"
         
         attributes = {
             'cn': user['cn'],
-            'sn': user['sn'],
-            'givenName': user['givenName'],
-            'uid': user['uid'],
-            'userPassword': hash_password(TEMP_PASSWORD),
-        }
-        
-        if create_entry(conn, user_dn, ['person', 'organizationalPerson', 'inetOrgPerson'], attributes):
-            grupo_cn = user['grupo_cn']
-            grupos_a_crear[grupo_cn]['members'].append(user_dn)
-
-    # 5. CREACIÓN DE GRUPOS Y ASIGNACIÓN DE MIEMBROS
-    print("\n--- PASO 3: CREANDO GRUPOS Y ASIGNANDO MIEMBROS ---")
-    
-    for grupo_cn, data in grupos_a_crear.items():
-        uo_mesa = data['uo_mesa']
-        members = data['members']
-        
-        # DN del grupo: cn=GRUPO,ou=MESA,ou=INFORMATICA,dc=ELLANO,dc=LOCAL
-        group_dn = f'cn={grupo_cn},ou={uo_mesa},{informatica_dn}'
-        
-        attributes = {
-            'cn': grupo_cn,
-            'objectClass': ['groupOfNames', 'top'],
-            'member': members 
-        }
-
-        create_entry(conn, group_dn, attributes['objectClass'], attributes)
-        
-    # 6. Cierre de la conexión
-    conn.unbind()
-    print("\n✨ Proceso de carga masiva finalizado. ✨")
-
-if __name__ == '__main__':
-    try:
-        main()
-    except NameError:
-        print("Error: Asegúrate de haber instalado todas las librerías con 'pip install ldap3'")
+            'sn': user['sn
