@@ -1,4 +1,4 @@
-import csv  # <-- 1. IMPORTACIÓN AÑADIDA (¡CRÍTICO!)
+import csv
 from ldap3 import Server, Connection, ALL, extend
 import hashlib
 import base64
@@ -8,12 +8,10 @@ import sys
 # =================================================================
 #                 CONFIGURACIÓN DEL SERVIDOR Y CREDENCIALES
 # -----------------------------------------------------------------
-# ⚠️ CONFIGURACIÓN AJUSTADA A 192.168.1.20 y ellano.local ⚠️
-# =================================================================
 LDAP_SERVER = 'ldap://192.168.1.20:389'      # IP del Ubuntu Server
 BIND_DN = 'cn=admin,dc=ellano,dc=ldap'        # DN de tu usuario administrador
 BIND_PASSWORD = 'Qwerty123'               # Contraseña del administrador (¡MODIFICA ESTO!)
-BASE_DN = 'dc=ellano,dc=ldap'                   # Nuevo DN base
+BASE_DN = 'dc=ellano,dc=ldap'                   # DN base
 # =================================================================
 CSV_FILE = 'ldap.csv'
 TEMP_PASSWORD = 'Qwerty123' # Contraseña temporal hasheada para todos los usuarios
@@ -63,7 +61,6 @@ def main():
     # 2. Leer datos del CSV y recolectar la estructura
     users_data = []
     try:
-        # El 'import csv' ya está arriba del script
         with open(CSV_FILE, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -83,8 +80,6 @@ def main():
     # 3. CREACIÓN DE UNIDADES ORGANIZATIVAS (OU)
     print("\n--- PASO 1: CREANDO UNIDADES ORGANIZATIVAS (OU) ---")
     
-    # --- 2. JERARQUÍA MODIFICADA ---
-    
     # 1. Crear la UO raíz: CIP Tafalla
     cip_tafalla_dn = f'ou=CIP Tafalla,{BASE_DN}'
     create_entry(conn, cip_tafalla_dn, ['organizationalUnit', 'top'], {'ou': 'CIP Tafalla'})
@@ -94,8 +89,6 @@ def main():
     create_entry(conn, informatica_dn, ['organizationalUnit', 'top'], {'ou': 'Informatica'})
 
     # 3. Crear las UOs de las Mesas (MesaDelante, etc.) DENTRO de Informatica
-    
-    # --- 3. FILTRO AÑADIDO (Evita error de NoneType) ---
     valid_uos = [uo for uo in uos_a_crear if uo] # Filtra None o strings vacíos
     
     for uo_mesa in sorted(valid_uos):
@@ -125,19 +118,20 @@ def main():
             'uid': user['uid'],
             'userPassword': hash_password(TEMP_PASSWORD),
             
-            # --- ✅ ATRIBUTOS POSIX GENERADOS ---
+            # --- ATRIBUTOS POSIX GENERADOS ---
             'uidNumber': str(next_uid_number),
             'gidNumber': default_user_gid, # ID del grupo principal del usuario
             'homeDirectory': f"/home/{user['uid']}",
             'loginShell': '/bin/bash'
         }
         
-        # --- ✅ CORREGIDO: 'posixGroup' -> 'posixAccount' ---
+        # --- 'posixAccount' es la clase correcta para usuarios ---
         object_classes = ['posixAccount', 'person', 'organizationalPerson', 'inetOrgPerson']
         
         if create_entry(conn, user_dn, object_classes, attributes):
             grupo_cn = user['grupo_cn']
-            grupos_a_crear[grupo_cn]['members'].append(user_dn)
+            # --- 💡 CORRECCIÓN: Guardamos el 'uid' para 'memberUid', no el DN ---
+            grupos_a_crear[grupo_cn]['members'].append(user['uid'])
         
         next_uid_number += 1 # Incrementamos el ID para el siguiente usuario
 
@@ -145,31 +139,28 @@ def main():
     # --- BLOQUE 'PASO 3' CORREGIDO ---
     # =================================================================
     
-   # 5. CREACIÓN DE GRUPOS Y ASIGNACIÓN DE MIEMBROS
+    # 5. CREACIÓN DE GRUPOS Y ASIGNACIÓN DE MIEMBROS
     print("\n--- PASO 3: CREANDO GRUPOS Y ASIGNANDO MIEMBROS ---")
     
     for grupo_cn, data in grupos_a_crear.items():
         uo_mesa = data['uo_mesa']
-        members = data['members']
+        members_uids = data['members'] # Esta lista ahora contiene 'uid's
         
         # DN del grupo: cn=GRUPO,ou=MESA,ou=INFORMATICA,ou=CIP TAFALLA,dc=...
         group_dn = f'cn={grupo_cn},ou={uo_mesa},{informatica_dn}'
         
-        # --- 💡 CORRECCIÓN APLICADA ---
+        # --- 💡 CORRECCIÓN: Usamos 'posixGroup' (no 'groupOfNames') ---
+        object_classes_group = ['posixGroup', 'top'] 
         
-        # 1. Definimos las objectClass por separado
-        object_classes_group = ['posixGroup', 'groupOfNames', 'top']
-        
-        # 2. Creamos un diccionario de atributos LIMPIO (sin 'objectClass')
+        # --- 💡 CORRECCIÓN: Usamos 'memberUid' (no 'member') ---
         attributes_group = {
             'cn': grupo_cn,
-            'member': members,
-            'gidNumber': str(next_gid_number) 
+            'gidNumber': str(next_gid_number),
+            'memberUid': members_uids # Pasa la lista de UIDs
         }
 
-        # Comprobamos que haya miembros antes de crear (LDAP a veces lo exige)
-        if members:
-            # 3. Llamamos a create_entry de forma limpia
+        # Comprobamos que haya miembros
+        if members_uids:
             create_entry(conn, group_dn, object_classes_group, attributes_group)
             next_gid_number += 1 # Incrementamos el ID para el siguiente grupo
         else:
