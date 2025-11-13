@@ -111,7 +111,7 @@ def main():
             'userPassword': hash_password(TEMP_PASSWORD),
         }
         
-        if create_entry(conn, user_dn, ['person', 'organizationalPerson', 'inetOrgPerson'], attributes):
+        if create_entry(conn, user_dn, ['posixGroup','person', 'organizationalPerson', 'inetOrgPerson'], attributes):
             grupo_cn = user['grupo_cn']
             grupos_a_crear[grupo_cn]['members'].append(user_dn)
 
@@ -127,7 +127,7 @@ def main():
         
         attributes = {
             'cn': grupo_cn,
-            'objectClass': ['groupOfNames', 'top'],
+            'objectClass': ['posixGroup','groupOfNames', 'top'],
             'member': members 
         }
 
