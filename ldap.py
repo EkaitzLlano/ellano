@@ -145,7 +145,7 @@ def main():
     # --- BLOQUE 'PASO 3' CORREGIDO ---
     # =================================================================
     
-    # 5. CREACIÓN DE GRUPOS Y ASIGNACIÓN DE MIEMBROS
+   # 5. CREACIÓN DE GRUPOS Y ASIGNACIÓN DE MIEMBROS
     print("\n--- PASO 3: CREANDO GRUPOS Y ASIGNANDO MIEMBROS ---")
     
     for grupo_cn, data in grupos_a_crear.items():
@@ -155,17 +155,22 @@ def main():
         # DN del grupo: cn=GRUPO,ou=MESA,ou=INFORMATICA,ou=CIP TAFALLA,dc=...
         group_dn = f'cn={grupo_cn},ou={uo_mesa},{informatica_dn}'
         
-        attributes = {
+        # --- 💡 CORRECCIÓN APLICADA ---
+        
+        # 1. Definimos las objectClass por separado
+        object_classes_group = ['posixGroup', 'groupOfNames', 'top']
+        
+        # 2. Creamos un diccionario de atributos LIMPIO (sin 'objectClass')
+        attributes_group = {
             'cn': grupo_cn,
-            'objectClass': ['posixGroup', 'groupOfNames', 'top'],
             'member': members,
-            # --- ✅ ATRIBUTO gidNumber AÑADIDO (¡CRÍTICO!) ---
             'gidNumber': str(next_gid_number) 
         }
 
         # Comprobamos que haya miembros antes de crear (LDAP a veces lo exige)
         if members:
-            create_entry(conn, group_dn, attributes['objectClass'], attributes)
+            # 3. Llamamos a create_entry de forma limpia
+            create_entry(conn, group_dn, object_classes_group, attributes_group)
             next_gid_number += 1 # Incrementamos el ID para el siguiente grupo
         else:
             print(f"⚠️ Saltando grupo {grupo_cn} (sin miembros)")
